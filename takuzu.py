@@ -35,23 +35,61 @@ class TakuzuState:
 
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
+    def __init__(self):
+        """O construtor especifica o estado inicial."""
+        self.matrix = []
+        self.size = 0
+        pass
+
+
 
     def get_number(self, row: int, col: int) -> int:
         """Devolve o valor na respetiva posição do tabuleiro."""
         # TODO
-        pass
+
+        return self.matrix[row-1][col-1]
 
     def adjacent_vertical_numbers(self, row: int, col: int) -> (int, int):
         """Devolve os valores imediatamente abaixo e acima,
         respectivamente."""
         # TODO
-        pass
+        if row < self.size:
+            low = self.matrix[row][col-1]
+        else:
+            low = None
+
+        if row > 1:
+            up = self.matrix[row-2][col-1]
+        else:
+            up = None
+
+        return (low, up)
 
     def adjacent_horizontal_numbers(self, row: int, col: int) -> (int, int):
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
         # TODO
-        pass
+        if col > 1:
+            left = self.matrix[row-1][col-2]
+        else:
+            left = None
+
+        if col < self.size:
+            right = self.matrix[row-1][col]
+        else:
+            right = None
+
+        return (left, right)
+
+    def printboard(self):
+
+        string = ""
+        for i in range(self.size):
+            for j in range(self.size):
+                string += str(self.matrix[i][j])
+                string += "\t"
+            string = string[:-1] + "\n"
+        print(string, sep="")
 
     @staticmethod
     def parse_instance_from_stdin():
@@ -72,9 +110,7 @@ class Board:
                     matrix[i][j] = int(line[_])
                     j += 1
         
-        return matrix # n sei se é para fazer o return ou deixar apenas o pass, mas penso que
-                     # será return pq precisamos dps de mover o board para a classe takuzu
-        pass
+        return matrix
 
     # TODO: outros metodos da classe
 
@@ -116,9 +152,12 @@ class Takuzu(Problem):
 
 if __name__ == "__main__":
     # TODO:
+    board = Board()
+    board.matrix = board.parse_instance_from_stdin()
+    board.size = len(board.matrix)
 
-    board = Board().parse_instance_from_stdin()
-
+    board.printboard()
+    
     # Ler o ficheiro de input de sys.argv[1],
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
