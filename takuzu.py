@@ -118,6 +118,7 @@ class Board:
 class Takuzu(Problem):
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
+        self.board = Board
         # TODO
         pass
 
@@ -125,6 +126,17 @@ class Takuzu(Problem):
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
         # TODO
+        possible_actions = [] 
+        
+        size = 4
+        for i in range(size):
+            for j in range(size):
+                
+                horizontal = TakuzuState.board.adjacent_horizontal_numbers(i, j)
+                if (horizontal[0] == horizontal[1]) and (horizontal[0] != 2):
+                    num = abs(horizontal[0] - 1)
+                    possible_actions += (i, j, num)
+        return possible_actions
         pass
 
     def result(self, state: TakuzuState, action):
@@ -155,6 +167,12 @@ if __name__ == "__main__":
     board = Board()
     board.matrix = board.parse_instance_from_stdin()
     board.size = len(board.matrix)
+
+    takuzu = Takuzu(board)
+    takuzuState = TakuzuState(board.matrix)
+
+    actions = takuzu.actions(takuzuState)
+    print(actions)
 
     board.printboard()
     
