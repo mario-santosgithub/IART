@@ -53,7 +53,8 @@ class Board:
         """Devolve os valores imediatamente abaixo e acima,
         respectivamente."""
         # TODO
-        if row < self.size:
+        size = len(self.matrix)
+        if row < size:
             low = self.matrix[row][col-1]
         else:
             low = None
@@ -63,18 +64,19 @@ class Board:
         else:
             up = None
 
-        return (low, up)
+        return (low, up) 
 
     def adjacent_horizontal_numbers(self, row: int, col: int) -> (int, int):
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
-        # TODO
+        
+        size = len(self.matrix)
         if col > 1:
             left = self.matrix[row-1][col-2]
         else:
             left = None
 
-        if col < self.size:
+        if col < size:
             right = self.matrix[row-1][col]
         else:
             right = None
@@ -89,6 +91,8 @@ class Board:
                 string += str(self.matrix[i][j])
                 string += "\t"
             string = string[:-1] + "\n"
+
+        string = string[:-1]
         print(string, sep="")
 
     @staticmethod
@@ -116,28 +120,32 @@ class Board:
 
 
 class Takuzu(Problem):
-    def __init__(self, board: Board):
+    
+    def __init__(self, board):
         """O construtor especifica o estado inicial."""
-        self.board = Board
-        # TODO
+        
+        self.board = board
+        
         pass
 
-    def actions(self, state: TakuzuState):
+    def actions(self, takuzuState): 
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
-        # TODO
-        possible_actions = [] 
-        
-        size = 4
-        for i in range(size):
-            for j in range(size):
-                
-                horizontal = TakuzuState.board.adjacent_horizontal_numbers(i, j)
-                if (horizontal[0] == horizontal[1]) and (horizontal[0] != 2):
+        possible_actions = []
+
+        size = len(self.board.matrix)
+        for i in range(1, size+1):
+            for j in range(1, size+1):
+                horizontal = takuzuState.board.adjacent_horizontal_numbers(i, j)
+                if (horizontal[0] != 2) and (horizontal[0] == horizontal[1]) and (takuzuState.board.get_number(i, j) == 2):
                     num = abs(horizontal[0] - 1)
-                    possible_actions += (i, j, num)
+                    possible_actions += [(i, j, num)]
+                vertical = takuzuState.board.adjacent_vertical_numbers(i, j)
+                if (vertical[0] != 2) and (vertical[0] == vertical[1]) and (takuzuState.board.get_number(i,j) == 2):
+                    num = abs(vertical[0] - 1)
+                    possible_actions += [(i, j, num)]
+                    
         return possible_actions
-        pass
 
     def result(self, state: TakuzuState, action):
         """Retorna o estado resultante de executar a 'action' sobre
@@ -166,15 +174,23 @@ if __name__ == "__main__":
     # TODO:
     board = Board()
     board.matrix = board.parse_instance_from_stdin()
-    board.size = len(board.matrix)
+
+
 
     takuzu = Takuzu(board)
-    takuzuState = TakuzuState(board.matrix)
+    takuzuState = TakuzuState(board)
 
     actions = takuzu.actions(takuzuState)
+
     print(actions)
 
-    board.printboard()
+    for i in range(0, 4):
+        for j in range(0,4):
+            print(i+1, j+1)
+            print(board.adjacent_horizontal_numbers(i+1, j+1))
+
+
+
     
     # Ler o ficheiro de input de sys.argv[1],
     # Usar uma técnica de procura para resolver a instância,
