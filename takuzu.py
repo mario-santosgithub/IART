@@ -38,10 +38,7 @@ class Board:
     def __init__(self):
         """O construtor especifica o estado inicial."""
         self.matrix = []
-        self.size = 0
         pass
-
-
 
     def get_number(self, row: int, col: int) -> int:
         """Devolve o valor na respetiva posição do tabuleiro."""
@@ -136,14 +133,36 @@ class Takuzu(Problem):
         size = len(self.board.matrix)
         for i in range(1, size+1):
             for j in range(1, size+1):
+                # horizontais do tipo 0 2 0
                 horizontal = takuzuState.board.adjacent_horizontal_numbers(i, j)
                 if (horizontal[0] != 2) and (horizontal[0] == horizontal[1]) and (takuzuState.board.get_number(i, j) == 2):
                     num = abs(horizontal[0] - 1)
                     possible_actions += [(i, j, num)]
+
+                #horizontais do tipo 2 0 0 2 (esquerda)
+                if (horizontal[0] == 2 and takuzuState.board.get_number(i,j) == horizontal[1] and horizontal[1] != 2):
+                    num = abs(horizontal[1] - 1)
+                    possible_actions += [(i, j-1, num)]
+                #horizontais do tipo 2 0 0 2 (direita)
+                if (horizontal[1] == 2 and takuzuState.board.get_number(i,j) == horizontal[0] and horizontal[0] != 2):
+                    num = abs(horizontal[0] - 1)
+                    possible_actions += [(i, j+1, num)]
+
+                # verticais do tipo 0 2 0
                 vertical = takuzuState.board.adjacent_vertical_numbers(i, j)
                 if (vertical[0] != 2) and (vertical[0] == vertical[1]) and (takuzuState.board.get_number(i,j) == 2):
                     num = abs(vertical[0] - 1)
                     possible_actions += [(i, j, num)]
+
+                #verticais do tipo 2 0 0 2 (cima)
+                if (vertical[1] == 2 and takuzuState.board.get_number(i,j) == vertical[0] and vertical[0] != 2):
+                    num = abs(vertical[0] - 1)
+                    possible_actions += [(i-1, j, num)]
+
+                #verticais do tipo 2 0 0 2 (baixo)
+                if (vertical[0] == 2 and takuzuState.board.get_number(i,j) == vertical[1] and vertical[1] != 2):
+                    num = abs(vertical[1] - 1)
+                    possible_actions += [(i+1, j, num)]
                     
         return possible_actions
 
@@ -184,10 +203,7 @@ if __name__ == "__main__":
 
     print(actions)
 
-    for i in range(0, 4):
-        for j in range(0,4):
-            print(i+1, j+1)
-            print(board.adjacent_horizontal_numbers(i+1, j+1))
+
 
 
 
