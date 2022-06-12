@@ -2,9 +2,9 @@
 # Devem alterar as classes e funções neste ficheiro de acordo com as instruções do enunciado.
 # Além das funções e classes já definidas, podem acrescentar outras que considerem pertinentes.
 
-# Grupo 00:
-# 00000 Nome1
-# 00000 Nome2
+# Grupo 33:
+# 99216 Filipa Magalhães
+# 99275 Mário Santos
 
 import sys
 from sys import stdin
@@ -35,32 +35,40 @@ class TakuzuState:
 
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
-    def __init__(self):
+    def __init__(self, matrix: list, size: int):
         """O construtor especifica o estado inicial."""
-        self.matrix = []
-        self.size = 0
-        pass
+        self.matrix = matrix
+        self.size = size
+    
+    def __str__(self):
+        """Retorna a string equivalente à representação externa
+            do tabuleiro."""
+        string = ""
+        for i in range(self.size):
+            for j in range(self.size):
+                string += str(self.matrix[i][j])
+                string += "\t"
+            string = string[:-1] + "\n"
 
-
+        return string[:-1]
+        #print(string, sep="")
 
     def get_number(self, row: int, col: int) -> int:
         """Devolve o valor na respetiva posição do tabuleiro."""
-        # TODO
 
-        return self.matrix[row-1][col-1]
+        return self.matrix[row][col]
 
     def adjacent_vertical_numbers(self, row: int, col: int) -> (int, int):
         """Devolve os valores imediatamente abaixo e acima,
         respectivamente."""
-        # TODO
-        size = len(self.matrix)
-        if row < size:
-            low = self.matrix[row][col-1]
+    
+        if row < self.size - 1:
+            low = self.matrix[row+1][col]
         else:
             low = None
 
-        if row > 1:
-            up = self.matrix[row-2][col-1]
+        if row > 0:
+            up = self.matrix[row-1][col]
         else:
             up = None
 
@@ -69,37 +77,24 @@ class Board:
     def adjacent_horizontal_numbers(self, row: int, col: int) -> (int, int):
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
-        
-        size = len(self.matrix)
-        if col > 1:
-            left = self.matrix[row-1][col-2]
+    
+        if col > 0:
+            left = self.matrix[row][col-1]
         else:
             left = None
 
-        if col < size:
-            right = self.matrix[row-1][col]
+        if col < self.size - 1:
+            right = self.matrix[row][col+1]
         else:
             right = None
 
         return (left, right)
 
-    def printboard(self):
-
-        string = ""
-        for i in range(self.size):
-            for j in range(self.size):
-                string += str(self.matrix[i][j])
-                string += "\t"
-            string = string[:-1] + "\n"
-
-        string = string[:-1]
-        print(string, sep="")
-
     @staticmethod
     def parse_instance_from_stdin():
         """Lê o test do standard input (stdin) que é passado como argumento
         e retorna uma instância da classe Board."""
-        # TODO
+
         size = int(stdin.readline()[0])
         matrix = [[0]*size for _ in range(size)]
 
@@ -114,7 +109,8 @@ class Board:
                     matrix[i][j] = int(line[_])
                     j += 1
         
-        return matrix
+        board = Board(matrix, size)
+        return board
 
     # TODO: outros metodos da classe
 
@@ -123,10 +119,7 @@ class Takuzu(Problem):
     
     def __init__(self, board):
         """O construtor especifica o estado inicial."""
-        
         self.board = board
-        
-        pass
 
     def actions(self, takuzuState): 
         """Retorna uma lista de ações que podem ser executadas a
@@ -137,7 +130,7 @@ class Takuzu(Problem):
         for i in range(1, size+1):
             for j in range(1, size+1):
                 horizontal = takuzuState.board.adjacent_horizontal_numbers(i, j)
-                if (horizontal[0] != 2) and (horizontal[0] == horizontal[1]) and (takuzuState.board.get_number(i, j) == 2):
+                if (horizontal[0] != 2) and (horizontal[0] == horizontal[1]) and is_empty(takuzuState, i, j):
                     num = abs(horizontal[0] - 1)
                     possible_actions += [(i, j, num)]
                 vertical = takuzuState.board.adjacent_vertical_numbers(i, j)
@@ -152,8 +145,10 @@ class Takuzu(Problem):
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
-        # TODO
-        pass
+        
+        state.board.matrix[action[0]][action[1]] = action[2]
+        
+        return state
 
     def goal_test(self, state: TakuzuState):
         """Retorna True se e só se o estado passado como argumento é
@@ -167,27 +162,36 @@ class Takuzu(Problem):
         # TODO
         pass
 
+    def is_empty(self, board: Board, row: int, col: int):
+        """Verifica se certa posição está ainda por preencher (True)."""
+        return board.get_number(row, col) == 2
+
     # TODO: outros metodos da classe
 
 
 if __name__ == "__main__":
     # TODO:
-    board = Board()
-    board.matrix = board.parse_instance_from_stdin()
 
+    board = Board.parse_instance_from_stdin()
+    print("Initial:\n", board, sep="")
+    
+    problem = Takuzu(board)
+    initial_state = TakuzuState(board)
 
+    print(initial_state.board.get_number(1, 2))
 
-    takuzu = Takuzu(board)
-    takuzuState = TakuzuState(board)
+    result_state = problem.result(initial_state, (1, 2, 1))
 
-    actions = takuzu.actions(takuzuState)
+    print(result_state.board.get_number(1, 2))
 
-    print(actions)
+    #actions = takuzu.actions(takuzuState)
 
-    for i in range(0, 4):
-        for j in range(0,4):
-            print(i+1, j+1)
-            print(board.adjacent_horizontal_numbers(i+1, j+1))
+    #print(actions)
+
+    #for i in range(0, 4):
+    #    for j in range(0,4):
+    #        print(i+1, j+1)
+    #        print(board.adjacent_horizontal_numbers(i+1, j+1))
 
 
 
