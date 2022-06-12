@@ -8,6 +8,7 @@
 
 import sys
 from sys import stdin
+import numpy as np
 from search import (
     Problem,
     Node,
@@ -35,7 +36,7 @@ class TakuzuState:
 
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
-    def __init__(self, matrix: list, size: int):
+    def __init__(self, matrix: np.ndarray, size: int):
         """O construtor especifica o estado inicial."""
         self.matrix = matrix
         self.size = size
@@ -51,7 +52,6 @@ class Board:
             string = string[:-1] + "\n"
 
         return string[:-1]
-        #print(string, sep="")
 
     def get_number(self, row: int, col: int) -> int:
         """Devolve o valor na respetiva posição do tabuleiro."""
@@ -117,48 +117,48 @@ class Board:
 
 class Takuzu(Problem):
     
-    def __init__(self, board):
+    def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
         self.board = board
 
-    def actions(self, takuzuState): 
+    def actions(self, state: TakuzuState): 
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
         possible_actions = []
 
-        size = len(self.board.matrix)
-        for i in range(1, size+1):
-            for j in range(1, size+1):
-                # horizontais do tipo 0 2 0
-                horizontal = takuzuState.board.adjacent_horizontal_numbers(i, j)
-                if (horizontal[0] != 2) and (horizontal[0] == horizontal[1]) and is_empty(takuzuState, i, j):
+        state_board = state.board
+        size = self.board.size
+        for i in range(size):
+            for j in range(size):
+                # Horizontais:
+                #  -> tipo 0 2 0
+                horizontal = state_board.adjacent_horizontal_numbers(i, j)
+                if (is_empty(state_board, i, j) and horizontal[0] == horizontal[1] != 2):
                     num = abs(horizontal[0] - 1)
                     possible_actions += [(i, j, num)]
-
-                #horizontais do tipo 2 0 0 2 (esquerda)
-                if (horizontal[0] == 2 and takuzuState.board.get_number(i,j) == horizontal[1] and horizontal[1] != 2):
+                #  -> tipo 2 0 0 (2) (esquerda)
+                if (horizontal[0] == 2 and state_board.get_number(i,j) == horizontal[1] != 2):
                     num = abs(horizontal[1] - 1)
                     possible_actions += [(i, j-1, num)]
-                #horizontais do tipo 2 0 0 2 (direita)
-                if (horizontal[1] == 2 and takuzuState.board.get_number(i,j) == horizontal[0] and horizontal[0] != 2):
+                #  -> tipo (2) 0 0 2 (direita)
+                if (horizontal[1] == 2 and state_board.get_number(i,j) == horizontal[0] != 2):
                     num = abs(horizontal[0] - 1)
                     possible_actions += [(i, j+1, num)]
-
-                # verticais do tipo 0 2 0
-                vertical = takuzuState.board.adjacent_vertical_numbers(i, j)
-                if (vertical[0] != 2) and (vertical[0] == vertical[1]) and (takuzuState.board.get_number(i,j) == 2):
+                
+                # Verticais:
+                #  -> tipo 0 2 0
+                vertical = state_board.adjacent_vertical_numbers(i, j)
+                if (is_empty(state_board, i, j) and vertical[0] == vertical[1] != 2):
                     num = abs(vertical[0] - 1)
                     possible_actions += [(i, j, num)]
-
-                #verticais do tipo 2 0 0 2 (cima)
-                if (vertical[1] == 2 and takuzuState.board.get_number(i,j) == vertical[0] and vertical[0] != 2):
-                    num = abs(vertical[0] - 1)
-                    possible_actions += [(i-1, j, num)]
-
-                #verticais do tipo 2 0 0 2 (baixo)
-                if (vertical[0] == 2 and takuzuState.board.get_number(i,j) == vertical[1] and vertical[1] != 2):
+                #  -> tipo (2) 0 0 2 (baixo)
+                if (vertical[0] == 2 and state_board.get_number(i,j) == vertical[1] != 2):
                     num = abs(vertical[1] - 1)
                     possible_actions += [(i+1, j, num)]
+                #  -> tipo 2 0 0 (2) (cima)
+                if (vertical[1] == 2 and state_board.get_number(i,j) == vertical[0] != 2):
+                    num = abs(vertical[0] - 1)
+                    possible_actions += [(i-1, j, num)]
                     
         return possible_actions
 
@@ -176,8 +176,43 @@ class Takuzu(Problem):
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas com uma sequência de números adjacentes."""
-        # TODO
-        pass
+        
+        size = state.board.size
+        final_board_rows = state.board.matrix
+        final_board_cols = np.transpose(final_board_rows)
+
+        # ---------------- NAO VERIFICA SE TEM ALGUM 2!!! --------------------
+        
+        # -> Máx. 2 números iguais adjacentes (vertical e horizontal)?
+        # -> #0's = #1's por linha/coluna?
+        #       Soma de todas as posições por linha/coluna == size // 2
+        #       [Se N é ímpar, pode também ser == (size // 2) + 1]
+        sum_values_each = size // 2
+
+        for row in final_board_rows:
+            total = np.sum(row)
+            if (total == sum_values_each or (size % 2 != 0 and total == sum_values_each + 1)):
+                for i in range(2, size):
+                    if (row[i-2] == row[i-1] == row[i]):
+                        return False
+            else:
+                return False
+        
+        for col in final_board_cols:
+            total = np.sum(col)
+            if (total == sum_values_each or (size % 2 != 0 and total == sum_values_each + 1)):
+                for j in range(2, size):
+                    if (col[j-2] == col[j-1] == col[j]):
+                        return False
+            else:
+                return False
+        
+        # -> Linhas/colunas todas diferentes?
+        if (len(np.unique(final_board_rows, axis=0)) != size or
+            len(np.unique(final_board_cols, axis=0)) != size):
+            return False
+        
+        return True
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
@@ -192,32 +227,52 @@ class Takuzu(Problem):
 
 
 if __name__ == "__main__":
-    # TODO:
 
-    board = Board.parse_instance_from_stdin()
-    print("Initial:\n", board, sep="")
+# EXEMPLO 1 ---------------------------
+    # board = Board.parse_instance_from_stdin()
+    # print("Initial:\n", board, sep="")
+    # print(board.adjacent_vertical_numbers(3, 3))
+    # print(board.adjacent_horizontal_numbers(3, 3))
+    # print(board.adjacent_vertical_numbers(1, 1))
+    # print(board.adjacent_horizontal_numbers(1, 1))
+
+# EXEMPLO 2 ---------------------------
+    # board = Board.parse_instance_from_stdin()
+    # print("Initial:\n", board, sep="")
+    # problem = Takuzu(board)
+    # initial_state = TakuzuState(board)
+    # print(initial_state.board.get_number(2, 2))
+    # result_state = problem.result(initial_state, (2, 2, 1))
+    # print(result_state.board.get_number(2, 2))
+
+# EXEMPLO 3 ---------------------------
+    # problem = Takuzu(board)
+    # s0 = TakuzuState(board)
+    # print("Initial:\n", s0.board, sep="")
+    # s1 = problem.result(s0, (0, 0, 0))
+    # s2 = problem.result(s1, (0, 2, 1))
+    # s3 = problem.result(s2, (1, 0, 1))
+    # s4 = problem.result(s3, (1, 1, 0))
+    # s5 = problem.result(s4, (1, 3, 1))
+    # s6 = problem.result(s5, (2, 0, 0))
+    # s7 = problem.result(s6, (2, 2, 1))
+    # s8 = problem.result(s7, (2, 3, 1))
+    # s9 = problem.result(s8, (3, 2, 0))
+    # print("Is goal?", problem.goal_test(s9))
+    # print("Solution:\n", s9.board, sep="")
     
-    problem = Takuzu(board)
-    initial_state = TakuzuState(board)
+# EXEMPLO 4 ---------------------------
+    #initial_state = TakuzuState(board)
 
-    print(initial_state.board.get_number(1, 2))
+    #print(initial_state.board.get_number(1, 2))
+    #result_state = problem.result(initial_state, (1, 2, 1))
+    #print(result_state.board.get_number(1, 2))
 
-    result_state = problem.result(initial_state, (1, 2, 1))
-
-    print(result_state.board.get_number(1, 2))
-
-    #actions = takuzu.actions(takuzuState)
-
+    #actions = problem.actions(initial_state)
     #print(actions)
-
-    #for i in range(0, 4):
-    #    for j in range(0,4):
-    #        print(i+1, j+1)
-    #        print(board.adjacent_horizontal_numbers(i+1, j+1))
-
-
-
     
+
+    # TODO:
     # Ler o ficheiro de input de sys.argv[1],
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
