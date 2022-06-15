@@ -36,10 +36,11 @@ class TakuzuState:
 
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
-    def __init__(self, matrix: np.ndarray, size: int):
+    def __init__(self, matrix: np.ndarray, size: int, free_positions: list):
         """O construtor especifica o estado inicial."""
         self.matrix = matrix
         self.size = size
+        self.free_positions = free_positions
     
     def __str__(self):
         """Retorna a string equivalente à representação externa
@@ -97,6 +98,7 @@ class Board:
 
         size = int(stdin.readline()[0])
         matrix = [[0]*size for _ in range(size)]
+        free_positions = []
 
         for i in range(size):
             j = 0
@@ -107,9 +109,11 @@ class Board:
             
                 if line[_] in ['0', '1', '2']:
                     matrix[i][j] = int(line[_])
+                    if (line[_] == '2'):
+                        free_positions += [(i, j)]
                     j += 1
         
-        board = Board(matrix, size)
+        board = Board(matrix, size, free_positions)
         return board
 
     # TODO: outros metodos da classe
@@ -117,7 +121,7 @@ class Board:
 
 class Takuzu(Problem):
     
-    def __init__(self, board: Board):
+    def __init__(self, board):
         """O construtor especifica o estado inicial."""
         self.board = board
 
@@ -127,39 +131,47 @@ class Takuzu(Problem):
         possible_actions = []
 
         state_board = state.board
-        size = self.board.size
-        for i in range(size):
-            for j in range(size):
-                # Horizontais:
-                #  -> tipo 0 2 0
-                horizontal = state_board.adjacent_horizontal_numbers(i, j)
-                if (is_empty(state_board, i, j) and horizontal[0] == horizontal[1] != 2):
-                    num = abs(horizontal[0] - 1)
-                    possible_actions += [(i, j, num)]
-                #  -> tipo 2 0 0 (2) (esquerda)
-                if (horizontal[0] == 2 and state_board.get_number(i,j) == horizontal[1] != 2):
-                    num = abs(horizontal[1] - 1)
-                    possible_actions += [(i, j-1, num)]
-                #  -> tipo (2) 0 0 2 (direita)
-                if (horizontal[1] == 2 and state_board.get_number(i,j) == horizontal[0] != 2):
-                    num = abs(horizontal[0] - 1)
-                    possible_actions += [(i, j+1, num)]
-                
-                # Verticais:
-                #  -> tipo 0 2 0
-                vertical = state_board.adjacent_vertical_numbers(i, j)
-                if (is_empty(state_board, i, j) and vertical[0] == vertical[1] != 2):
-                    num = abs(vertical[0] - 1)
-                    possible_actions += [(i, j, num)]
-                #  -> tipo (2) 0 0 2 (baixo)
-                if (vertical[0] == 2 and state_board.get_number(i,j) == vertical[1] != 2):
-                    num = abs(vertical[1] - 1)
-                    possible_actions += [(i+1, j, num)]
-                #  -> tipo 2 0 0 (2) (cima)
-                if (vertical[1] == 2 and state_board.get_number(i,j) == vertical[0] != 2):
-                    num = abs(vertical[0] - 1)
-                    possible_actions += [(i-1, j, num)]
-                    
+        free_positions = state.board.free_positions
+        size = state.board.size
+
+        #final_board_rows = state.board.matrix
+        #final_board_cols = np.transpose(final_board_rows)
+
+        for pos in free_positions:
+            i, j = pos[0], pos[1]
+            # Horizontais:
+            horizontal = state_board.adjacent_horizontal_numbers(i, j)
+            #  -> tipo 0 2 0
+            if (horizontal[0] == horizontal[1] != 2):
+                num = abs(horizontal[0] - 1)
+                return [(i, j, num)]
+
+            #  -> tipo (2) 0 0 2 (esquerda)
+            if (j+2 < size and state_board.matrix[i][j+1] == state_board.matrix[i][j+2] != 2):
+                num = abs(state_board.matrix[i][j+1] - 1)
+                return [(i, j, num)]
+            #  -> tipo (2) 0 0 2 (direita)
+            if (j >= 2 and state_board.matrix[i][j-2] == state_board.matrix[i][j-1] != 2):
+                num = abs(state_board.matrix[i][j-1] - 1)
+                return [(i, j, num)]
+          
+          # Verticais:
+            #  -> tipo 0 2 0
+            vertical = state_board.adjacent_vertical_numbers(i, j)
+            if (vertical[0] == vertical[1] != 2):
+                num = abs(vertical[0] - 1)
+                return [(i, j, num)]
+            #  -> tipo (2) 0 0 2 (baixo)
+            if (i+2 < size and state_board.matrix[i+1][j] == state_board.matrix[i+2][j] != 2):
+                num = abs(state_board.matrix[i+1][j] - 1)
+                return [(i, j, num)]
+            #  -> tipo (2) 0 0 2 (cima)
+            if (i >= 2 and state_board.matrix[i-2][j] == state_board.matrix[i-1][j] != 2):
+                num = abs(state_board.matrix[i-1][j] - 1)
+                return [(i, j, num)]
+
+            possible_actions += [(i, j, 0), (i, j, 1)] 
+
         return possible_actions
 
     def result(self, state: TakuzuState, action):
@@ -169,8 +181,10 @@ class Takuzu(Problem):
         self.actions(state)."""
         
         state.board.matrix[action[0]][action[1]] = action[2]
+
+        newState = TakuzuState(state.board)
         
-        return state
+        return newState
 
     def goal_test(self, state: TakuzuState):
         """Retorna True se e só se o estado passado como argumento é
@@ -219,14 +233,19 @@ class Takuzu(Problem):
         # TODO
         pass
 
-    def is_empty(self, board: Board, row: int, col: int):
-        """Verifica se certa posição está ainda por preencher (True)."""
-        return board.get_number(row, col) == 2
-
     # TODO: outros metodos da classe
 
 
 if __name__ == "__main__":
+    
+
+    board = Board.parse_instance_from_stdin()
+    state = TakuzuState(board)
+    takuzu = Takuzu(board)
+
+    actions = takuzu.actions(state)
+
+    print(actions)
 
 # EXEMPLO 1 ---------------------------
     # board = Board.parse_instance_from_stdin()
