@@ -181,7 +181,9 @@ class Takuzu(Problem):
         self.actions(state)."""
         
         state.board.matrix[action[0]][action[1]] = action[2]
-
+        
+        position = (action[0], action[1])
+        state.board.free_positions.remove(position)
         newState = TakuzuState(state.board)
         
         return newState
@@ -244,8 +246,6 @@ if __name__ == "__main__":
     takuzu = Takuzu(board)
 
     actions = takuzu.actions(state)
-
-    print(actions)
 
 # EXEMPLO 1 ---------------------------
     # board = Board.parse_instance_from_stdin()
