@@ -215,13 +215,15 @@ class Takuzu(Problem):
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
+        i, j, val = action[0], action[1], action[2]
         
-        state.board.matrix[action[0]][action[1]] = action[2]
-        
-        position = (action[0], action[1])
-        state.board.free_positions.remove(position)
+        state.board.matrix[i][j] = val
+
+        state.board.num_values_row[i][val] += 1
+        state.board.num_values_col[j][val] += 1
+        state.board.free_positions.remove((i, j))
+
         newState = TakuzuState(state.board)
-        
         return newState
 
     def goal_test(self, state: TakuzuState):
@@ -275,15 +277,40 @@ class Takuzu(Problem):
 
 
 if __name__ == "__main__":
-    
+    # Ler o ficheiro de input de sys.argv[1],
+    # Usar uma técnica de procura para resolver a instância,
+    # Retirar a solução a partir do nó resultante,
+    # Imprimir para o standard output no formato indicado.
+
+    # board = Board.parse_instance_from_stdin()
+    # print("Initial:\n", board, sep="")
+    # problem = Takuzu(board)
+    # goal_node = depth_first_tree_search(problem)
+    # print("Is goal?", problem.goal_test(goal_node.state))
+    # print("Solution:\n", goal_node.state.board, sep="")
+
+
 
     board = Board.parse_instance_from_stdin()
     print("Initial:\n", board, sep="")
-    state = TakuzuState(board)
-    takuzu = Takuzu(board)
 
-    actions = takuzu.actions(state)
-    print(actions)
+    print("\n")
+
+    takuzu = Takuzu(board)
+    state = TakuzuState(board)
+    while(not takuzu.goal_test(state)):
+        
+        state = TakuzuState(board)
+        
+        actions = takuzu.actions(state)
+
+        if len(actions) == 1:
+            state = takuzu.result(state, actions[0])
+        else:
+            #dfs?
+            pass
+    print("Is goal?", takuzu.goal_test(state))
+    print("Solution:\n", state.board, sep="")
 
 # EXEMPLO 1 ---------------------------
     # board = Board.parse_instance_from_stdin()
