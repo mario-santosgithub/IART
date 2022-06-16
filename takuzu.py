@@ -36,12 +36,15 @@ class TakuzuState:
 
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
-    def __init__(self, matrix: np.ndarray, size: int, free_positions: list):
+    def __init__(self, matrix: np.ndarray, size: int, free_positions: list, 
+                sum_values_row: list, sum_values_col: list):
         """O construtor especifica o estado inicial."""
         self.matrix = matrix
         self.size = size
-        self.free_positions = free_positions
-    
+        self.free_positions = free_positions    # lista com posições vazias (==2)
+        self.sum_values_row = sum_values_row    # lista de listas
+        self.sum_values_col = sum_values_col    # lista de listas
+
     def __str__(self):
         """Retorna a string equivalente à representação externa
             do tabuleiro."""
@@ -99,6 +102,8 @@ class Board:
         size = int(stdin.readline()[0])
         matrix = [[0]*size for _ in range(size)]
         free_positions = []
+        num_values_row = np.zeros([size, 2], dtype = int)
+        num_values_col = np.zeros([size, 2], dtype = int)
 
         for i in range(size):
             j = 0
@@ -107,12 +112,16 @@ class Board:
 
             for _ in range(lineSize):
             
-                if line[_] in ['0', '1', '2']:
-                    matrix[i][j] = int(line[_])
-                    if (line[_] == '2'):
+                if (value = line[_]) in ['0', '1', '2']:
+                    value = int(line[_])
+                    matrix[i][j] = value
+                    if (value == 2):
                         free_positions += [(i, j)]
+                    else:
+                        sum_values_row[i][value] += 1
+                        sum_values_col[j][value] += 1
                     j += 1
-        
+            
         board = Board(matrix, size, free_positions)
         return board
 
@@ -134,11 +143,26 @@ class Takuzu(Problem):
         free_positions = state.board.free_positions
         size = state.board.size
 
+        max_num_value = size // 2
         #final_board_rows = state.board.matrix
         #final_board_cols = np.transpose(final_board_rows)
 
         for pos in free_positions:
             i, j = pos[0], pos[1]
+            
+            # Completar linha/coluna
+            for val in range(2):
+                if (size%2 == 0):
+                    if (state_board.num_values_row[i][val] == max_num_value or
+                        state_board.num_values_col[j][val] == max_num_value):
+                        num = abs(val - 1)
+                        return [(i, j, num)]
+                else:
+                    if (state_board.num_values_row[i][val] == max_num_value + 1 or
+                        state_board.num_values_col[j][val] == max_num_value + 1):
+                        num = abs(val - 1)
+                        return [(i, j, num)]
+
             # Horizontais:
             horizontal = state_board.adjacent_horizontal_numbers(i, j)
             #  -> tipo 0 2 0
