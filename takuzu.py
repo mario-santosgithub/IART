@@ -37,13 +37,13 @@ class TakuzuState:
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
     def __init__(self, matrix: np.ndarray, size: int, free_positions: list, 
-                sum_values_row: list, sum_values_col: list):
+                num_values_row: list, num_values_col: list):
         """O construtor especifica o estado inicial."""
         self.matrix = matrix
         self.size = size
         self.free_positions = free_positions    # lista com posições vazias (==2)
-        self.sum_values_row = sum_values_row    # lista de listas
-        self.sum_values_col = sum_values_col    # lista de listas
+        self.num_values_row = num_values_row    # lista de listas
+        self.num_values_col = num_values_col    # lista de listas
 
     def __str__(self):
         """Retorna a string equivalente à representação externa
@@ -102,8 +102,10 @@ class Board:
         size = int(stdin.readline()[0])
         matrix = [[0]*size for _ in range(size)]
         free_positions = []
-        num_values_row = np.zeros([size, 2], dtype = int)
-        num_values_col = np.zeros([size, 2], dtype = int)
+        num_values_row = np.zeros([size, 3], dtype = int)
+        num_values_col = np.zeros([size, 3], dtype = int)
+        # num_values_row = np.zeros([size, 2], dtype = int)
+        # num_values_col = np.zeros([size, 2], dtype = int)
 
         for i in range(size):
             j = 0
@@ -112,17 +114,19 @@ class Board:
 
             for _ in range(lineSize):
             
-                if (value = line[_]) in ['0', '1', '2']:
+                if line[_] in ['0', '1', '2']:
                     value = int(line[_])
                     matrix[i][j] = value
                     if (value == 2):
                         free_positions += [(i, j)]
-                    else:
-                        sum_values_row[i][value] += 1
-                        sum_values_col[j][value] += 1
+                    # else:
+                    #     num_values_row[i][value] += 1
+                    #     num_values_col[j][value] += 1
+                    num_values_row[i][value] += 1
+                    num_values_col[j][value] += 1
                     j += 1
             
-        board = Board(matrix, size, free_positions)
+        board = Board(matrix, size, free_positions, num_values_row, num_values_col)
         return board
 
     # TODO: outros metodos da classe
@@ -150,7 +154,7 @@ class Takuzu(Problem):
         for pos in free_positions:
             i, j = pos[0], pos[1]
             
-            # Completar linha/coluna
+        # ----- Completar linha/coluna: -----
             for val in range(2):
                 if (size%2 == 0):
                     if (state_board.num_values_row[i][val] == max_num_value or
@@ -163,7 +167,7 @@ class Takuzu(Problem):
                         num = abs(val - 1)
                         return [(i, j, num)]
 
-            # Horizontais:
+        # ----- Horizontais: -----
             horizontal = state_board.adjacent_horizontal_numbers(i, j)
             #  -> tipo 0 2 0
             if (horizontal[0] == horizontal[1] != 2):
@@ -179,7 +183,7 @@ class Takuzu(Problem):
                 num = abs(state_board.matrix[i][j-1] - 1)
                 return [(i, j, num)]
           
-          # Verticais:
+        # ----- Verticais: -----
             #  -> tipo 0 2 0
             vertical = state_board.adjacent_vertical_numbers(i, j)
             if (vertical[0] == vertical[1] != 2):
@@ -194,7 +198,15 @@ class Takuzu(Problem):
                 num = abs(state_board.matrix[i-1][j] - 1)
                 return [(i, j, num)]
 
-            possible_actions += [(i, j, 0), (i, j, 1)] 
+        # ----- Linhas/Colunas diferentes: -----
+            # if (state_board.num_values_row[i][2] == 2):
+            #     for row in range(size):
+                    
+            #         if (size%2 == 0):
+
+            # if (state_board.num_values_col[j][2] == 2):
+
+            possible_actions += [(i, j, 0), (i, j, 1)]
 
         return possible_actions
 
@@ -266,10 +278,12 @@ if __name__ == "__main__":
     
 
     board = Board.parse_instance_from_stdin()
+    print("Initial:\n", board, sep="")
     state = TakuzuState(board)
     takuzu = Takuzu(board)
 
     actions = takuzu.actions(state)
+    print(actions)
 
 # EXEMPLO 1 ---------------------------
     # board = Board.parse_instance_from_stdin()
