@@ -28,6 +28,9 @@ class TakuzuState:
         self.id = TakuzuState.state_id
         TakuzuState.state_id += 1
 
+    def __str__(self):
+        return str(self.id)
+
     def __lt__(self, other):
         return self.id < other.id
 
@@ -111,7 +114,6 @@ class Board:
             j = 0
             line = stdin.readline()
             lineSize = len(line)
-
             for _ in range(lineSize):
             
                 if line[_] in ['0', '1', '2']:
@@ -129,6 +131,30 @@ class Board:
         board = Board(matrix, size, free_positions, num_values_row, num_values_col)
         return board
 
+
+    def get_board(self, action):
+        
+        newBoard = Board(self.matrix, self.size, self.free_positions, self.num_values_row, self.num_values_col)
+
+        print(newBoard is self)
+        i, j, val = action[0], action[1], action[2]
+        
+        print("------ BOARD: -------")
+        print(newBoard)
+        print("action:")
+        print(action)
+        print("\nfree positions:")
+        print(newBoard.free_positions)
+
+        newBoard.matrix[i][j] = val
+        newBoard.num_values_row[i][val] += 1
+        newBoard.num_values_row[i][2] -= 1
+        newBoard.num_values_col[j][val] += 1
+        newBoard.num_values_col[j][2] -= 1
+        newBoard.free_positions.remove((i, j))
+        
+        return newBoard
+
     # TODO: outros metodos da classe
 
 
@@ -136,6 +162,7 @@ class Takuzu(Problem):
     
     def __init__(self, board):
         """O construtor especifica o estado inicial."""
+        super().__init__(TakuzuState(board))
         self.board = board
 
     def actions(self, state: TakuzuState): 
@@ -215,16 +242,9 @@ class Takuzu(Problem):
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
-        i, j, val = action[0], action[1], action[2]
-        
-        state.board.matrix[i][j] = val
+        board = state.board.get_board(action)
 
-        state.board.num_values_row[i][val] += 1
-        state.board.num_values_col[j][val] += 1
-        state.board.free_positions.remove((i, j))
-
-        newState = TakuzuState(state.board)
-        return newState
+        return TakuzuState(board)
 
     def goal_test(self, state: TakuzuState):
         """Retorna True se e só se o estado passado como argumento é
@@ -232,11 +252,16 @@ class Takuzu(Problem):
         estão preenchidas com uma sequência de números adjacentes."""
         
         size = state.board.size
+        
+        # -> Alguma posição por preencher?
+        for k in range(size):
+            if (state.board.num_values_row[k][2] != 0 or
+                state.board.num_values_col[k][2] != 0):
+                return False
+
         final_board_rows = state.board.matrix
         final_board_cols = np.transpose(final_board_rows)
 
-        # ---------------- NAO VERIFICA SE TEM ALGUM 2!!! --------------------
-        
         # -> Máx. 2 números iguais adjacentes (vertical e horizontal)?
         # -> #0's = #1's por linha/coluna?
         #       Soma de todas as posições por linha/coluna == size // 2
@@ -282,35 +307,37 @@ if __name__ == "__main__":
     # Retirar a solução a partir do nó resultante,
     # Imprimir para o standard output no formato indicado.
 
-    # board = Board.parse_instance_from_stdin()
-    # print("Initial:\n", board, sep="")
-    # problem = Takuzu(board)
-    # goal_node = depth_first_tree_search(problem)
-    # print("Is goal?", problem.goal_test(goal_node.state))
-    # print("Solution:\n", goal_node.state.board, sep="")
-
-
-
     board = Board.parse_instance_from_stdin()
     print("Initial:\n", board, sep="")
+    problem = Takuzu(board)
+    goal_node = depth_first_tree_search(problem)
+    print("Is goal?", problem.goal_test(goal_node.state))
+    print("Solution:\n", goal_node.state.board, sep="")
 
-    print("\n")
 
-    takuzu = Takuzu(board)
-    state = TakuzuState(board)
-    while(not takuzu.goal_test(state)):
+
+    # board = Board.parse_instance_from_stdin()
+    # print("Initial:\n", board, sep="")
+
+    # print("\n")
+
+    # takuzu = Takuzu(board)
+    # state = TakuzuState(board)
+    # while(not takuzu.goal_test(state)):
         
-        state = TakuzuState(board)
+    #     state = TakuzuState(board)
         
-        actions = takuzu.actions(state)
+    #     actions = takuzu.actions(state)
 
-        if len(actions) == 1:
-            state = takuzu.result(state, actions[0])
-        else:
-            #dfs?
-            pass
-    print("Is goal?", takuzu.goal_test(state))
-    print("Solution:\n", state.board, sep="")
+    #     if len(actions) == 1:
+    #         state = takuzu.result(state, actions[0])
+    #     else:
+    #         #dfs?
+    #         pass
+    #     print("\n")
+    #     print(state.board)
+    # print("Is goal?", takuzu.goal_test(state))
+    # print("Solution:\n", state.board, sep="")
 
 # EXEMPLO 1 ---------------------------
     # board = Board.parse_instance_from_stdin()
