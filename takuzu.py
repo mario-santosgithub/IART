@@ -101,7 +101,7 @@ class Board:
         """Lê o test do standard input (stdin) que é passado como argumento
         e retorna uma instância da classe Board."""
 
-        size = int(stdin.readline()[0])
+        size = int(stdin.readline())
         matrix = [[0]*size for _ in range(size)]
         num_values_row = np.zeros([size, 3], dtype = int)
         num_values_col = np.zeros([size, 3], dtype = int)
@@ -134,17 +134,21 @@ class Board:
 
         i, j, val = action[0], action[1], action[2]
         
-        print("------ BOARD: -------")
-        print(newBoard)
-        print("action:")
-        print(action)
+        newMatrix = np.copy(self.matrix)
+        newMatrix[i][j] = val
 
-        newBoard.matrix[i][j] = val
-        newBoard.num_values_row[i][val] += 1
-        newBoard.num_values_row[i][2] -= 1
-        newBoard.num_values_col[j][val] += 1
-        newBoard.num_values_col[j][2] -= 1
+        newSize = np.copy(self.size)
+
+        newValues_row = np.copy(self.num_values_row)
+        newValues_row[i][val] += 1
+        newValues_row[i][2] -= 1
+
+
+        newValues_col = np.copy(self.num_values_col)
+        newValues_col[j][val] += 1
+        newValues_col[j][2] -= 1
         
+        newBoard = Board(newMatrix, newSize, newValues_row, newValues_col)
         return newBoard
 
     # TODO: outros metodos da classe
@@ -171,9 +175,6 @@ class Takuzu(Problem):
             for j in range(size):
                 if state.board.matrix[i][j] == 2:
                     free_positions += [(i, j)]
-
-        print("free positions: ")
-        print(free_positions)
 
         max_num_value = size // 2
         #final_board_rows = state.board.matrix
@@ -309,11 +310,10 @@ if __name__ == "__main__":
     # Imprimir para o standard output no formato indicado.
 
     board = Board.parse_instance_from_stdin()
-    print("Initial:\n", board, sep="")
     problem = Takuzu(board)
     goal_node = depth_first_tree_search(problem)
-    print("Is goal?", problem.goal_test(goal_node.state))
-    print("Solution:\n", goal_node.state.board, sep="")
+    #print("Is goal?", problem.goal_test(goal_node.state))
+    print(goal_node.state.board, sep="")
 
 
 
