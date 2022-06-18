@@ -39,12 +39,11 @@ class TakuzuState:
 
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
-    def __init__(self, matrix: np.ndarray, size: int, free_positions: list, 
-                num_values_row: list, num_values_col: list):
+    def __init__(self, matrix: np.ndarray, size: int, num_values_row: list,
+     num_values_col: list):
         """O construtor especifica o estado inicial."""
         self.matrix = matrix
         self.size = size
-        self.free_positions = free_positions    # lista com posições vazias (==2)
         self.num_values_row = num_values_row    # lista de listas
         self.num_values_col = num_values_col    # lista de listas
 
@@ -104,7 +103,6 @@ class Board:
 
         size = int(stdin.readline()[0])
         matrix = [[0]*size for _ in range(size)]
-        free_positions = []
         num_values_row = np.zeros([size, 3], dtype = int)
         num_values_col = np.zeros([size, 3], dtype = int)
         # num_values_row = np.zeros([size, 2], dtype = int)
@@ -119,8 +117,6 @@ class Board:
                 if line[_] in ['0', '1', '2']:
                     value = int(line[_])
                     matrix[i][j] = value
-                    if (value == 2):
-                        free_positions += [(i, j)]
                     # else:
                     #     num_values_row[i][value] += 1
                     #     num_values_col[j][value] += 1
@@ -128,30 +124,26 @@ class Board:
                     num_values_col[j][value] += 1
                     j += 1
             
-        board = Board(matrix, size, free_positions, num_values_row, num_values_col)
+        board = Board(matrix, size, num_values_row, num_values_col)
         return board
 
 
     def get_board(self, action):
         
-        newBoard = Board(self.matrix, self.size, self.free_positions, self.num_values_row, self.num_values_col)
+        newBoard = Board(self.matrix, self.size, self.num_values_row, self.num_values_col)
 
-        print(newBoard is self)
         i, j, val = action[0], action[1], action[2]
         
         print("------ BOARD: -------")
         print(newBoard)
         print("action:")
         print(action)
-        print("\nfree positions:")
-        print(newBoard.free_positions)
 
         newBoard.matrix[i][j] = val
         newBoard.num_values_row[i][val] += 1
         newBoard.num_values_row[i][2] -= 1
         newBoard.num_values_col[j][val] += 1
         newBoard.num_values_col[j][2] -= 1
-        newBoard.free_positions.remove((i, j))
         
         return newBoard
 
@@ -168,11 +160,20 @@ class Takuzu(Problem):
     def actions(self, state: TakuzuState): 
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
+        
         possible_actions = []
-
         state_board = state.board
-        free_positions = state.board.free_positions
         size = state.board.size
+
+        free_positions = []
+
+        for i in range(size):
+            for j in range(size):
+                if state.board.matrix[i][j] == 2:
+                    free_positions += [(i, j)]
+
+        print("free positions: ")
+        print(free_positions)
 
         max_num_value = size // 2
         #final_board_rows = state.board.matrix
@@ -234,7 +235,7 @@ class Takuzu(Problem):
             # if (state_board.num_values_col[j][2] == 2):
 
             possible_actions += [(i, j, 0), (i, j, 1)]
-
+    
         return possible_actions
 
     def result(self, state: TakuzuState, action):
