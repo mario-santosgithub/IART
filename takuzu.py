@@ -169,73 +169,67 @@ class Takuzu(Problem):
         state_board = state.board
         size = state.board.size
 
-        free_positions = []
+        free_positions = size
 
         for i in range(size):
             for j in range(size):
                 if state.board.matrix[i][j] == 2:
-                    free_positions += [(i, j)]
 
-        max_num_value = size // 2
-        #final_board_rows = state.board.matrix
-        #final_board_cols = np.transpose(final_board_rows)
+                    max_num_value = size // 2
+                    #final_board_rows = state.board.matrix
+                    #final_board_cols = np.transpose(final_board_rows)
+                        
+                    # ----- Completar linha/coluna: -----
+                    for val in range(2):
+                        if (size%2 == 0):
+                            if (state_board.num_values_row[i][val] == max_num_value or
+                                state_board.num_values_col[j][val] == max_num_value):
+                                num = abs(val - 1)
+                                return [(i, j, num)]
+                        else:
+                            if (state_board.num_values_row[i][val] == max_num_value + 1 or
+                                state_board.num_values_col[j][val] == max_num_value + 1):
+                                num = abs(val - 1)
+                                return [(i, j, num)]
 
-        for pos in free_positions:
-            i, j = pos[0], pos[1]
-            
-        # ----- Completar linha/coluna: -----
-            for val in range(2):
-                if (size%2 == 0):
-                    if (state_board.num_values_row[i][val] == max_num_value or
-                        state_board.num_values_col[j][val] == max_num_value):
-                        num = abs(val - 1)
+                # ----- Horizontais: -----
+                    horizontal = state_board.adjacent_horizontal_numbers(i, j)
+                    #  -> tipo 0 2 0
+                    if (horizontal[0] == horizontal[1] != 2):
+                        num = abs(horizontal[0] - 1)
                         return [(i, j, num)]
-                else:
-                    if (state_board.num_values_row[i][val] == max_num_value + 1 or
-                        state_board.num_values_col[j][val] == max_num_value + 1):
-                        num = abs(val - 1)
+
+                    #  -> tipo (2) 0 0 2 (esquerda)
+                    if (j+2 < size and state_board.matrix[i][j+1] == state_board.matrix[i][j+2] != 2):
+                        num = abs(state_board.matrix[i][j+1] - 1)
+                        return [(i, j, num)]
+                    #  -> tipo (2) 0 0 2 (direita)
+                    if (j >= 2 and state_board.matrix[i][j-2] == state_board.matrix[i][j-1] != 2):
+                        num = abs(state_board.matrix[i][j-1] - 1)
+                        return [(i, j, num)]
+                
+                # ----- Verticais: -----
+                    #  -> tipo 0 2 0
+                    vertical = state_board.adjacent_vertical_numbers(i, j)
+                    if (vertical[0] == vertical[1] != 2):
+                        num = abs(vertical[0] - 1)
+                        return [(i, j, num)]
+                    #  -> tipo (2) 0 0 2 (baixo)
+                    if (i+2 < size and state_board.matrix[i+1][j] == state_board.matrix[i+2][j] != 2):
+                        num = abs(state_board.matrix[i+1][j] - 1)
+                        return [(i, j, num)]
+                    #  -> tipo (2) 0 0 2 (cima)
+                    if (i >= 2 and state_board.matrix[i-2][j] == state_board.matrix[i-1][j] != 2):
+                        num = abs(state_board.matrix[i-1][j] - 1)
                         return [(i, j, num)]
 
-        # ----- Horizontais: -----
-            horizontal = state_board.adjacent_horizontal_numbers(i, j)
-            #  -> tipo 0 2 0
-            if (horizontal[0] == horizontal[1] != 2):
-                num = abs(horizontal[0] - 1)
-                return [(i, j, num)]
-
-            #  -> tipo (2) 0 0 2 (esquerda)
-            if (j+2 < size and state_board.matrix[i][j+1] == state_board.matrix[i][j+2] != 2):
-                num = abs(state_board.matrix[i][j+1] - 1)
-                return [(i, j, num)]
-            #  -> tipo (2) 0 0 2 (direita)
-            if (j >= 2 and state_board.matrix[i][j-2] == state_board.matrix[i][j-1] != 2):
-                num = abs(state_board.matrix[i][j-1] - 1)
-                return [(i, j, num)]
-          
-        # ----- Verticais: -----
-            #  -> tipo 0 2 0
-            vertical = state_board.adjacent_vertical_numbers(i, j)
-            if (vertical[0] == vertical[1] != 2):
-                num = abs(vertical[0] - 1)
-                return [(i, j, num)]
-            #  -> tipo (2) 0 0 2 (baixo)
-            if (i+2 < size and state_board.matrix[i+1][j] == state_board.matrix[i+2][j] != 2):
-                num = abs(state_board.matrix[i+1][j] - 1)
-                return [(i, j, num)]
-            #  -> tipo (2) 0 0 2 (cima)
-            if (i >= 2 and state_board.matrix[i-2][j] == state_board.matrix[i-1][j] != 2):
-                num = abs(state_board.matrix[i-1][j] - 1)
-                return [(i, j, num)]
-
-        # ----- Linhas/Colunas diferentes: -----
-            # if (state_board.num_values_row[i][2] == 2):
-            #     for row in range(size):
-                    
-            #         if (size%2 == 0):
-
-            # if (state_board.num_values_col[j][2] == 2):
-
-            possible_actions += [(i, j, 0), (i, j, 1)]
+                
+                    if (state_board.num_values_row[i][2] < free_positions) or (state_board.num_values_col[j][2] < free_positions):
+                        if state_board.num_values_row[i][2] < state_board.num_values_col[j][2]:
+                            free_possible_actions = state_board.num_values_row[i][2]
+                        else:
+                            free_possible_actions = state_board.num_values_col[j][2]
+                        possible_actions = [(i, j, 1), (i, j, 0)]
     
         return possible_actions
 
