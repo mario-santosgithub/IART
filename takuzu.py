@@ -226,9 +226,9 @@ class Takuzu(Problem):
                 
                     if (state_board.num_values_row[i][2] < free_positions) or (state_board.num_values_col[j][2] < free_positions):
                         if state_board.num_values_row[i][2] < state_board.num_values_col[j][2]:
-                            free_possible_actions = state_board.num_values_row[i][2]
+                            free_positions = state_board.num_values_row[i][2]
                         else:
-                            free_possible_actions = state_board.num_values_col[j][2]
+                            free_positions = state_board.num_values_col[j][2]
                         possible_actions = [(i, j, 1), (i, j, 0)]
     
         return possible_actions
