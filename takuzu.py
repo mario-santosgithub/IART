@@ -19,7 +19,7 @@ from search import (
     recursive_best_first_search,
 )
 
-
+# --------------------------------- TAKUZU STATE ------------------------------
 class TakuzuState:
     state_id = 0
 
@@ -34,18 +34,19 @@ class TakuzuState:
     def __lt__(self, other):
         return self.id < other.id
 
-    # TODO: outros metodos da classe
 
-
+# ----------------------------------- BOARD -----------------------------------
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
     def __init__(self, matrix: np.ndarray, size: int, num_values_row: list,
      num_values_col: list):
         """O construtor especifica o estado inicial."""
-        self.matrix = matrix
-        self.size = size
-        self.num_values_row = num_values_row    # lista de listas
-        self.num_values_col = num_values_col    # lista de listas
+        self.matrix = matrix    # matriz do tabuleiro (lista de listas)
+        self.size = size        # tamanho do tabuleiro
+        # número de vezes que os valores 1 e 2 aparecem por linha
+        self.num_values_row = num_values_row    
+        # número de vezes que os valores 1 e 2 aparecem por coluna
+        self.num_values_col = num_values_col
 
     def __str__(self):
         """Retorna a string equivalente à representação externa
@@ -103,10 +104,8 @@ class Board:
 
         size = int(stdin.readline())
         matrix = [[0]*size for _ in range(size)]
-        num_values_row = np.zeros([size, 3], dtype = int)
-        num_values_col = np.zeros([size, 3], dtype = int)
-        # num_values_row = np.zeros([size, 2], dtype = int)
-        # num_values_col = np.zeros([size, 2], dtype = int)
+        num_values_row = np.zeros([size, 2], dtype = int)
+        num_values_col = np.zeros([size, 2], dtype = int)
 
         for i in range(size):
             j = 0
@@ -117,20 +116,22 @@ class Board:
                 if line[_] in ['0', '1', '2']:
                     value = int(line[_])
                     matrix[i][j] = value
-                    # else:
-                    #     num_values_row[i][value] += 1
-                    #     num_values_col[j][value] += 1
-                    num_values_row[i][value] += 1
-                    num_values_col[j][value] += 1
+
+                    if value != 0:
+                        num_values_row[i][value-1] += 1
+                        num_values_col[j][value-1] += 1
                     j += 1
-            
+
         board = Board(matrix, size, num_values_row, num_values_col)
         return board
 
 
     def get_board(self, action):
-        
-        newBoard = Board(self.matrix, self.size, self.num_values_row, self.num_values_col)
+        """Faz uma cópia para uma nova instância da classe Board
+        depois de executada uma ação."""
+
+        newBoard = Board(self.matrix, self.size, self.num_values_row, \
+            self.num_values_col)
 
         i, j, val = action[0], action[1], action[2]
         
@@ -140,20 +141,35 @@ class Board:
         newSize = np.copy(self.size)
 
         newValues_row = np.copy(self.num_values_row)
-        newValues_row[i][val] += 1
-        newValues_row[i][2] -= 1
-
+        if val == 1:
+            newValues_row[i][0] += 1
+        newValues_row[i][1] -= 1
 
         newValues_col = np.copy(self.num_values_col)
-        newValues_col[j][val] += 1
-        newValues_col[j][2] -= 1
-        
+        if val == 1:
+            newValues_col[j][0] += 1
+        newValues_col[j][1] -= 1
+
         newBoard = Board(newMatrix, newSize, newValues_row, newValues_col)
         return newBoard
 
-    # TODO: outros metodos da classe
+
+    def heuristic(self):
+        """Devolve o valor da heuristica do tabuleiro."""
+        h = 0
+        
+        for i in range(self.size):
+            if (self.num_values_row[i][1] == 0):
+                continue
+
+            for j in range(self.size):
+                if self.matrix[i][j] == 2:
+                    h += self.num_values_row[i][1] + self.num_values_col[j][1]
+
+        return h
 
 
+# ------------------------------------ TAKUZU ---------------------------------
 class Takuzu(Problem):
     
     def __init__(self, board):
@@ -164,41 +180,38 @@ class Takuzu(Problem):
     def actions(self, state: TakuzuState): 
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
-        
+
         possible_actions = []
         state_board = state.board
         size = state.board.size
 
-        free_positions = size
-
         for i in range(size):
+            if (state_board.num_values_row[i][1] == 0):
+                continue
+
             for j in range(size):
                 if state.board.matrix[i][j] == 2:
 
-                    max_num_value = size // 2
-                    #final_board_rows = state.board.matrix
-                    #final_board_cols = np.transpose(final_board_rows)
+                    if (size % 2 == 0):
+                        max_num_value = size // 2
+                    else:
+                        max_num_value = (size // 2) + 1
                         
-                    # ----- Completar linha/coluna: -----
-                    for val in range(2):
-                        if (size%2 == 0):
-                            if (state_board.num_values_row[i][val] == max_num_value or
-                                state_board.num_values_col[j][val] == max_num_value):
-                                num = abs(val - 1)
-                                return [(i, j, num)]
-                        else:
-                            if (state_board.num_values_row[i][val] == max_num_value + 1 or
-                                state_board.num_values_col[j][val] == max_num_value + 1):
-                                num = abs(val - 1)
-                                return [(i, j, num)]
+                # ----- Completar linha/coluna: -----
+                    if ((state_board.num_values_row[i][0] == max_num_value) or
+                        (state_board.num_values_col[j][0] == max_num_value)):
+                        return [(i, j, 0)]
 
+                    if (((size - state_board.num_values_row[i][0] - state_board.num_values_row[i][1]) == max_num_value) or
+                        ((size - state_board.num_values_col[j][0] - state_board.num_values_col[j][1]) == max_num_value)):  
+                        return [(i, j, 1)]
+                        
                 # ----- Horizontais: -----
                     horizontal = state_board.adjacent_horizontal_numbers(i, j)
                     #  -> tipo 0 2 0
                     if (horizontal[0] == horizontal[1] != 2):
                         num = abs(horizontal[0] - 1)
                         return [(i, j, num)]
-
                     #  -> tipo (2) 0 0 2 (esquerda)
                     if (j+2 < size and state_board.matrix[i][j+1] == state_board.matrix[i][j+2] != 2):
                         num = abs(state_board.matrix[i][j+1] - 1)
@@ -223,13 +236,9 @@ class Takuzu(Problem):
                         num = abs(state_board.matrix[i-1][j] - 1)
                         return [(i, j, num)]
 
-                
-                    if (state_board.num_values_row[i][2] < free_positions) or (state_board.num_values_col[j][2] < free_positions):
-                        if state_board.num_values_row[i][2] < state_board.num_values_col[j][2]:
-                            free_positions = state_board.num_values_row[i][2]
-                        else:
-                            free_positions = state_board.num_values_col[j][2]
-                        possible_actions = [(i, j, 1), (i, j, 0)]
+                # Escolher a primeira posicao livre (caso não haja nenhuma escolha direta):
+                    if possible_actions == []:
+                        possible_actions = [(i, j, 0), (i, j, 1)]
     
         return possible_actions
 
@@ -251,8 +260,8 @@ class Takuzu(Problem):
         
         # -> Alguma posição por preencher?
         for k in range(size):
-            if (state.board.num_values_row[k][2] != 0 or
-                state.board.num_values_col[k][2] != 0):
+            if (state.board.num_values_row[k][1] != 0 or
+                state.board.num_values_col[k][1] != 0):
                 return False
 
         final_board_rows = state.board.matrix
@@ -291,10 +300,7 @@ class Takuzu(Problem):
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
-        # TODO
-        pass
-
-    # TODO: outros metodos da classe
+        return node.state.board.heuristic()
 
 
 if __name__ == "__main__":
@@ -305,82 +311,8 @@ if __name__ == "__main__":
 
     board = Board.parse_instance_from_stdin()
     problem = Takuzu(board)
-    goal_node = depth_first_tree_search(problem)
-    #print("Is goal?", problem.goal_test(goal_node.state))
+    goal_node = depth_first_tree_search(problem) 
+    #goal_node = astar_search(problem)
     print(goal_node.state.board, sep="")
 
-
-
-    # board = Board.parse_instance_from_stdin()
-    # print("Initial:\n", board, sep="")
-
-    # print("\n")
-
-    # takuzu = Takuzu(board)
-    # state = TakuzuState(board)
-    # while(not takuzu.goal_test(state)):
-        
-    #     state = TakuzuState(board)
-        
-    #     actions = takuzu.actions(state)
-
-    #     if len(actions) == 1:
-    #         state = takuzu.result(state, actions[0])
-    #     else:
-    #         #dfs?
-    #         pass
-    #     print("\n")
-    #     print(state.board)
-    # print("Is goal?", takuzu.goal_test(state))
-    # print("Solution:\n", state.board, sep="")
-
-# EXEMPLO 1 ---------------------------
-    # board = Board.parse_instance_from_stdin()
-    # print("Initial:\n", board, sep="")
-    # print(board.adjacent_vertical_numbers(3, 3))
-    # print(board.adjacent_horizontal_numbers(3, 3))
-    # print(board.adjacent_vertical_numbers(1, 1))
-    # print(board.adjacent_horizontal_numbers(1, 1))
-
-# EXEMPLO 2 ---------------------------
-    # board = Board.parse_instance_from_stdin()
-    # print("Initial:\n", board, sep="")
-    # problem = Takuzu(board)
-    # initial_state = TakuzuState(board)
-    # print(initial_state.board.get_number(2, 2))
-    # result_state = problem.result(initial_state, (2, 2, 1))
-    # print(result_state.board.get_number(2, 2))
-
-# EXEMPLO 3 ---------------------------
-    # problem = Takuzu(board)
-    # s0 = TakuzuState(board)
-    # print("Initial:\n", s0.board, sep="")
-    # s1 = problem.result(s0, (0, 0, 0))
-    # s2 = problem.result(s1, (0, 2, 1))
-    # s3 = problem.result(s2, (1, 0, 1))
-    # s4 = problem.result(s3, (1, 1, 0))
-    # s5 = problem.result(s4, (1, 3, 1))
-    # s6 = problem.result(s5, (2, 0, 0))
-    # s7 = problem.result(s6, (2, 2, 1))
-    # s8 = problem.result(s7, (2, 3, 1))
-    # s9 = problem.result(s8, (3, 2, 0))
-    # print("Is goal?", problem.goal_test(s9))
-    # print("Solution:\n", s9.board, sep="")
-    
-# EXEMPLO 4 ---------------------------
-    #initial_state = TakuzuState(board)
-
-    #print(initial_state.board.get_number(1, 2))
-    #result_state = problem.result(initial_state, (1, 2, 1))
-    #print(result_state.board.get_number(1, 2))
-
-    #actions = problem.actions(initial_state)
-    #print(actions)
-    
-
-    # TODO:
-    # Ler o ficheiro de input de sys.argv[1],
-    # Usar uma técnica de procura para resolver a instância,
-    # Retirar a solução a partir do nó resultante,
-    # Imprimir para o standard output no formato indicado.
     pass
